@@ -1,0 +1,158 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>El Último Despertar</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#090d1b;color:white;font-family:Arial;text-align:center}
+h2{color:#54d9ff;margin:12px}
+#stats{padding:10px;color:#fff;background:#17213b}
+canvas{width:100%;max-width:600px;background:#111b36;display:block;margin:auto;border:2px solid #385b9c;touch-action:none}
+.controls{display:flex;justify-content:center;gap:12px;padding:15px;flex-wrap:wrap}
+button{background:#263d70;color:white;border:2px solid #5d9cff;border-radius:12px;padding:17px;font-size:18px;font-weight:bold;touch-action:none}
+#attack{background:#9b234d}
+#message{color:#ffdf70;min-height:24px}
+</style>
+</head>
+<body>
+<h2>⚔️ EL ÚLTIMO DESPERTAR</h2>
+<div id="stats">❤️ 100 | EXP 0 | Nivel 1</div>
+<canvas id="game" width="600" height="350"></canvas>
+<div id="message">¡Sobrevive a las criaturas!</div>
+<div class="controls">
+<button id="left">◀</button>
+<button id="right">▶</button>
+<button id="jump">⬆ SALTAR</button>
+<button id="attack">⚔️ ATACAR</button>
+</div>
+<script>
+const c=document.getElementById("game");
+const ctx=c.getContext("2d");
+const stats=document.getElementById("stats");
+const msg=document.getElementById("message");
+
+let p={x:90,y:260,w:30,h:55,hp:100,exp:0,lvl:1,vy:0};
+let enemies=[];
+let keys={left:false,right:false};
+let attacking=0;
+let gameOver=false;
+let frame=0;
+
+function spawn(){
+ enemies.push({x:570,y:270,hp:40,w:30,alive:true});
+}
+
+function draw(){
+ ctx.clearRect(0,0,600,350);
+ ctx.fillStyle="#172448";
+ ctx.fillRect(0,300,600,50);
+ ctx.fillStyle="#263e70";
+ for(let i=0;i<600;i+=60)ctx.fillRect(i,290,30,10);
+
+ // jugador
+ ctx.fillStyle="#43d9ff";
+ ctx.fillRect(p.x,p.y,p.w,p.h);
+ ctx.fillStyle="#fff";
+ ctx.fillRect(p.x+18,p.y+10,5,5);
+ ctx.fillStyle="#3285ff";
+ ctx.fillRect(p.x-5,p.y+25,40,8);
+
+ // espada
+ if(attacking>0){
+  ctx.fillStyle="#e5faff";
+  ctx.fillRect(p.x+25,p.y+22,45,7);
+  attacking--;
+ }
+
+ // enemigos
+ enemies.forEach(e=>{
+  if(!e.alive)return;
+  ctx.fillStyle="#a52c58";
+  ctx.fillRect(e.x,e.y,e.w,30);
+  ctx.fillStyle="red";
+  ctx.fillRect(e.x,e.y-9,e.hp,5);
+  ctx.fillStyle="white";
+  ctx.fillRect(e.x+18,e.y+8,5,5);
+ });
+
+ stats.textContent="❤️ "+Math.ceil(p.hp)+" | EXP "+p.exp+" | Nivel "+p.lvl;
+}
+
+function update(){
+ if(gameOver)return;
+ frame++;
+
+ if(keys.left)p.x-=4;
+ if(keys.right)p.x+=4;
+ p.x=Math.max(0,Math.min(570,p.x));
+
+ p.y+=p.vy;
+ if(p.y<245)p.vy+=0.6;
+ else {p.y=245;p.vy=0;}
+
+ if(frame%130===0)spawn();
+
+ enemies.forEach(e=>{
+  if(!e.alive)return;
+  if(e.x>p.x+35)e.x-=1.2;
+  if(Math.abs(e.x-p.x)<35){
+   if(frame%45===0)p.hp-=5;
+  }
+  if(e.hp<=0){
+   e.alive=false;
+   p.exp+=25;
+   msg.textContent="¡Criatura derrotada! +25 EXP";
+   if(p.exp>=100){
+    p.exp-=100;
+    p.lvl++;
+    p.hp=100;
+    msg.textContent="¡SUBISTE DE NIVEL!";
+   }
+  }
+ });
+
+ if(p.hp<=0){
+  p.hp=0;
+  gameOver=true;
+  msg.textContent="☠️ HAS CAÍDO. Recarga para volver a jugar.";
+ }
+ draw();
+ if(!gameOver)requestAnimationFrame(update);
+}
+
+function attack(){
+ if(gameOver)return;
+ attacking=8;
+ enemies.forEach(e=>{
+  if(e.alive && e.x>p.x && e.x<p.x+95){
+   e.hp-=25;
+   if(e.hp<=0)e.alive=false;
+  }
+ });
+}
+
+function jump(){
+ if(p.y>=244)p.vy=-12;
+}
+
+function hold(id,key){
+ const b=document.getElementById(id);
+ b.addEventListener("pointerdown",e=>{e.preventDefault();keys[key]=true});
+ b.addEventListener("pointerup",()=>keys[key]=false);
+ b.addEventListener("pointerleave",()=>keys[key]=false);
+ b.addEventListener("pointercancel",()=>keys[key]=false);
+}
+
+hold("left","left");
+hold("right","right");
+document.getElementById("jump").addEventListener("pointerdown",jump);
+document.getElementById("attack").addEventListener("pointerdown",attack);
+
+spawn();
+update();
+</script>
+</body>
+</html>
