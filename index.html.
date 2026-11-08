@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>El Último Despertar</title>
+<style>
+body {
+  margin:0;
+  background:#080d19;
+  color:white;
+  font-family:Arial;
+  text-align:center;
+  overflow:hidden;
+}
+h2 {color:#54d9ff}
+canvas {
+  width:100%;
+  max-width:600px;
+  background:#111b31;
+  border:2px solid #54d9ff;
+  touch-action:none;
+}
+button {
+  background:#174c77;
+  color:white;
+  border:2px solid #54d9ff;
+  border-radius:12px;
+  padding:16px;
+  font-weight:bold;
+  touch-action:none;
+}
+.controls {
+  display:flex;
+  justify-content:space-around;
+  margin:12px;
+}
+#info {font-size:14px}
+</style>
+</head>
+<body>
+
+<h2>⚔ EL ÚLTIMO DESPERTAR</h2>
+<div id="info">Nivel 1 | Zona: Bosque Oscuro</div>
+<canvas id="game" width="360" height="480"></canvas>
+
+<div class="controls">
+<button id="left">⬅</button>
+<button id="up">⬆</button>
+<button id="down">⬇</button>
+<button id="right">➡</button>
+<button id="attack">⚔ ATACAR</button>
+</div>
+
+<p id="stats">❤️ 100 | EXP 0 | Nivel 1</p>
+
+<script>
+const c=document.getElementById("game");
+const ctx=c.getContext("2d");
+
+let player={x:180,y:240,hp:100,exp:0,lvl:1};
+let enemy={x:90,y:100,hp:40,alive:true};
+let keys={};
+let attack=false;
+let zone=1;
+
+function button(id,key){
+ const b=document.getElementById(id);
+ b.addEventListener("pointerdown",e=>{
+   e.preventDefault();keys[key]=true;
+ });
+ ["pointerup","pointerleave","pointercancel"].forEach(ev=>
+ b.addEventListener(ev,()=>keys[key]=false));
+}
+button("left","left");
+button("right","right");
+button("up","up");
+button("down","down");
+
+document.getElementById("attack").addEventListener("pointerdown",()=>{
+ attack=true;
+});
+
+function draw(){
+ ctx.clearRect(0,0,360,480);
+
+ ctx.fillStyle=zone===1?"#152b26":"#282044";
+ ctx.fillRect(0,0,360,480);
+
+ ctx.fillStyle="#294c35";
+ for(let i=0;i<15;i++){
+   ctx.fillRect((i*83)%360,(i*67)%480,20,28);
+ }
+
+ // Jugador
+ ctx.fillStyle="#45caff";
+ ctx.fillRect(player.x-10,player.y-15,20,30);
+ ctx.fillStyle="white";
+ ctx.fillRect(player.x-5,player.y-9,4,4);
+
+ // Enemigo
+ if(enemy.alive){
+   ctx.fillStyle="#d72e56";
+   ctx.fillRect(enemy.x-13,enemy.y-13,26,26);
+   ctx.fillStyle="white";
+   ctx.fillText("MONSTRUO",enemy.x-30,enemy.y-22);
+ }
+
+ ctx.fillStyle="white";
+ ctx.font="14px Arial";
+ ctx.fillText("ZONA "+zone,10,20);
+
+ if(player.hp<=0){
+   ctx.fillStyle="red";
+   ctx.font="28px Arial";
+   ctx.fillText("HAS CAÍDO",105,240);
+ }
+}
+
+function update(){
+ if(player.hp>0){
+   if(keys.left)player.x-=3;
+   if(keys.right)player.x+=3;
+   if(keys.up)player.y-=3;
+   if(keys.down)player.y+=3;
+
+   player.x=Math.max(12,Math.min(348,player.x));
+   player.y=Math.max(20,Math.min(468,player.y));
+
+   if(enemy.alive){
+     let d=Math.hypot(player.x-enemy.x,player.y-enemy.y);
+     if(d>24){
+       enemy.x+=(player.x-enemy.x)/d*0.6;
+       enemy.y+=(player.y-enemy.y)/d*0.6;
+     } else {
+       player.hp-=0.08;
+     }
+
+     if(attack && d<65){
+       enemy.hp-=15;
+       if(enemy.hp<=0){
+         enemy.alive=false;
+         player.exp+=25;
+         if(player.exp>=100){
+           player.lvl++;
+           player.exp=0;
+           player.hp=100;
+         }
+       }
+     }
+   } else {
+     enemy={x:Math.random()*280+30,y:Math.random()*380+40,hp:40,alive:true};
+   }
+ }
+ attack=false;
+
+ document.getElementById("stats").textContent=
+ "❤️ "+Math.ceil(player.hp)+" | EXP "+player.exp+" | Nivel "+player.lvl;
+
+ draw();
+ requestAnimationFrame(update);
+}
+update();
+</script>
+</body>
+</html>
